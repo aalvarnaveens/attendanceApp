@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 exports.createRegister = async (req, res) => {
   try {
     const { name, employeeId, phoneNumber, salary,role,email,password } = req.body;
+    
 // check user
 const userExists = await User.findOne({email});
 
