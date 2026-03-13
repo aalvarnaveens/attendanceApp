@@ -63,7 +63,47 @@ const hashedPassword = await bcrypt.hash(password,10);
   }
 };
 
+exports.getAllUsers = async (req, res) => {
+ try {
 
+  let { page = 1, limit = 10 } = req.query;
+
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  const skip = (page - 1) * limit;
+
+  const users = await User.aggregate([
+   {
+    $project: {
+     password: 0 // hide password
+    }
+   },
+   {
+    $skip: skip
+   },
+   {
+    $limit: limit
+   }
+  ]);
+
+  const totalUsers = await User.countDocuments();
+
+  res.status(200).json({
+   success: true,
+   page,
+   limit,
+   totalUsers,
+   totalPages: Math.ceil(totalUsers / limit),
+   data: users
+  });
+
+ } catch (error) {
+  res.status(500).json({
+   message: error.message
+  });
+ }
+};
 
 
 // Login
