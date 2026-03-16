@@ -9,10 +9,13 @@ const cookieParser = require("cookie-parser");
 const app = express();
 
 app.use(
- cors({
-  origin: "https://radiant-fox-081675.netlify.app",
-  credentials: true
- })
+  cors({
+    origin: [
+      "https://radiant-fox-081675.netlify.app",
+      "http://localhost:5137"
+    ],
+    credentials: true
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
