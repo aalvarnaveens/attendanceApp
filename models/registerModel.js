@@ -11,20 +11,20 @@ const registerSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    role:{
-  type:String,
-  required:true,
-  enum:["Admin","Superadmin","Employee"]
- },
-   password: {
-    type: String,
-    required: true
-  },
+    role: {
+      type: String,
+      required: true,
+      enum: ["Admin", "Superadmin", "Employee"]
+    },
+    password: {
+      type: String,
+      required: true
+    },
     email: {
-    type: String,
-    required: true,
-    unique: true
-  },
+      type: String,
+      required: true,
+      unique: true
+    },
     phoneNumber: {
       type: String,
       required: true,

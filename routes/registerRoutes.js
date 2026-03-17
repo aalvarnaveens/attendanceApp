@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { upload } = require("../middleware/upload");
-const { createRegister,login,Userlogout,getAllUsers} = require("../controllers/registerController");
+const { createRegister, login, Userlogout, getAllUsers, getSingleUser } = require("../controllers/registerController");
 
 router.post(
   "/register",
@@ -12,8 +12,9 @@ router.post(
   ]),
   createRegister
 );
-router.post("/login",login);
+router.post("/login", login);
 router.post("/logout", Userlogout);
 router.get("/getall", getAllUsers);
+router.get("/get/:id", getSingleUser);
 
 module.exports = router;

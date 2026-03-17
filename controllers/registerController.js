@@ -3,23 +3,21 @@ const { cloudinary } = require("../middleware/upload");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-
-
 exports.createRegister = async (req, res) => {
   try {
-    const { name, employeeId, phoneNumber, salary,role,email,password } = req.body;
-    
-// check user
-const userExists = await User.findOne({email});
+    const { name, employeeId, phoneNumber, salary, role, email, password } = req.body;
 
-if(userExists){
- return res.status(400).json({
-  message:"User already exists"
- });
-}
+    // check user
+    const userExists = await User.findOne({ email });
 
-// 🔐 password hash here
-const hashedPassword = await bcrypt.hash(password,10);
+    if (userExists) {
+      return res.status(400).json({
+        message: "User already exists"
+      });
+    }
+
+    // 🔐 password hash here
+    const hashedPassword = await bcrypt.hash(password, 10);
     let frontImage = "";
     let backImage = "";
 
@@ -43,7 +41,7 @@ const hashedPassword = await bcrypt.hash(password,10);
       name,
       employeeId,
       phoneNumber,
-        role,
+      role,
       salary,
       email,
       password: hashedPassword,
@@ -65,104 +63,126 @@ const hashedPassword = await bcrypt.hash(password,10);
 };
 
 exports.getAllUsers = async (req, res) => {
- try {
+  try {
 
-  let { page = 1, limit = 10 } = req.query;
+    let { page = 1, limit = 10 } = req.query;
 
-  page = parseInt(page);
-  limit = parseInt(limit);
+    page = parseInt(page);
+    limit = parseInt(limit);
 
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  const users = await User.aggregate([
-   {
-    $project: {
-     password: 0 // hide password
+    const users = await User.aggregate([
+      {
+        $project: {
+          password: 0 // hide password
+        }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: limit
+      }
+    ]);
+
+    const totalUsers = await User.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      data: users
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+exports.getSingleUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    const id = user._id;
+    if (!id) {
+      return res.status(400).json({
+        message: "User not found"
+      });
     }
-   },
-   {
-    $skip: skip
-   },
-   {
-    $limit: limit
-   }
-  ]);
 
-  const totalUsers = await User.countDocuments();
-
-  res.status(200).json({
-   success: true,
-   page,
-   limit,
-   totalUsers,
-   totalPages: Math.ceil(totalUsers / limit),
-   data: users
-  });
-
- } catch (error) {
-  res.status(500).json({
-   message: error.message
-  });
- }
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
 };
 
 
 // Login
 exports.login = async (req, res) => {
- try {
+  try {
 
-  const { email, password } = req.body;
+    const { email, password } = req.body;
 
 
 
-  const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-  if (!user) {
-  
-   return res.status(400).json({ message: "Invalid Email" });
+    if (!user) {
+
+      return res.status(400).json({ message: "Invalid Email" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+
+      return res.status(400).json({ message: "Invalid Password" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+
+
+    // 🍪 cookie la token save
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+
+
+    res.json({
+      success: true,
+      message: "Login successful"
+    });
+
+  } catch (err) {
+    console.log("Login Error:", err);
+    res.status(500).json({ message: err.message });
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-  
-   return res.status(400).json({ message: "Invalid Password" });
-  }
-
-  const token = jwt.sign(
-   { id: user._id, role: user.role },
-   process.env.JWT_SECRET,
-   { expiresIn: "7d" }
-  );
-
-
-
-  // 🍪 cookie la token save
-  res.cookie("token", token, {
-   httpOnly: true,
-   secure: false,
-   sameSite: "strict",
-   maxAge: 7 * 24 * 60 * 60 * 1000
-  });
-
-
-
-  res.json({
-   success: true,
-   message: "Login successful"
-  });
-
- } catch (err) {
-  console.log("Login Error:", err);
-  res.status(500).json({ message: err.message });
- }
 };
 
 exports.Userlogout = (req, res) => {
- res.clearCookie("token").json({
-  success: true,
-  message: "Logout successfully"
- });
+  res.clearCookie("token").json({
+    success: true,
+    message: "Logout successfully"
+  });
 };
 
 
